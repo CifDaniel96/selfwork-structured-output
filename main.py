@@ -18,154 +18,128 @@ client = OpenAI(api_key=api_key)
 
 
 # =========================================================
-# ESEMPIO 1 - MATH TUTOR
+# ESEMPIO 1 - BUG REPORT TRIAGE
 # =========================================================
 
-class Step(BaseModel):
-    explanation: str
-    output: str
-
-
-class MathReasoning(BaseModel):
-    steps: list[Step]
-    final_answer: str
-
-
-def get_math_solution(question: str) -> MathReasoning:
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Sei un tutor di matematica. "
-                    "Guida lo studente passo dopo passo "
-                    "nella risoluzione del problema."
-                ),
-            },
-            {
-                "role": "user",
-                "content": question,
-            },
-        ],
-        response_format=MathReasoning,
-    )
-
-    return completion.choices[0].message.parsed
-
-
-math_solution = get_math_solution(
-    "Risolvi l'equazione 8x + 7 = -23"
-)
-
-print("\n=== ESEMPIO 1: MATH TUTOR ===\n")
-
-for index, step in enumerate(
-    math_solution.steps,
-    start=1,
-):
-    print(f"Passaggio {index}")
-    print(f"Spiegazione: {step.explanation}")
-    print(f"Risultato: {step.output}")
-    print()
-
-print(
-    f"Risposta finale: "
-    f"{math_solution.final_answer}"
-)
-
-
-# =========================================================
-# ESEMPIO 2 - TEXT SUMMARIZATION
-# =========================================================
-
-class Concept(BaseModel):
-    title: str
-    description: str
-
-
-class ArticleSummary(BaseModel):
-    invented_year: int
+class BugReport(BaseModel):
+    category: str
+    priority: str
     summary: str
-    inventors: list[str]
-    concepts: list[Concept]
-    description: str
+    possible_cause: str
+    suggested_actions: list[str]
 
 
-def get_article_summary(article: str) -> ArticleSummary:
+def analyze_bug_report(report: str) -> BugReport:
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "Ti verrà fornito il contenuto di un articolo "
-                    "su un'invenzione. Riassumi l'articolo seguendo "
-                    "lo schema fornito."
+                    "Sei un assistente tecnico specializzato nel triage "
+                    "dei bug software. Analizza la segnalazione ricevuta "
+                    "e restituisci le informazioni secondo lo schema fornito. "
+                    "La possibile causa deve essere indicata come ipotesi "
+                    "e non come certezza. Non inventare dettagli non presenti "
+                    "o non deducibili dalla segnalazione."
                 ),
             },
             {
                 "role": "user",
-                "content": article,
+                "content": report,
             },
         ],
-        response_format=ArticleSummary,
+        response_format=BugReport,
     )
 
     return completion.choices[0].message.parsed
 
 
-article = """
-Il Transformer è un'architettura di rete neurale introdotta nel 2017
-nel paper 'Attention Is All You Need'.
+bug_report = analyze_bug_report(
+    """
+    Dopo l'ultimo aggiornamento dell'applicazione,
+    quando provo a caricare un'immagine profilo in formato PNG
+    ricevo sempre un errore 500.
 
-Il lavoro è stato sviluppato da un gruppo di ricercatori tra cui
-Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
-Llion Jones, Aidan Gomez, Lukasz Kaiser e Illia Polosukhin.
+    Il problema impedisce di completare il profilo utente.
+    """
+)
 
-L'architettura Transformer utilizza il meccanismo di attention per
-elaborare le relazioni tra le parole di una sequenza senza dipendere
-necessariamente da reti ricorrenti.
+print("\n=== ESEMPIO 1: BUG REPORT TRIAGE ===\n")
 
-Uno dei concetti fondamentali è la self-attention, che permette al
-modello di assegnare pesi differenti alle varie parti dell'input.
-Un altro elemento importante è la multi-head attention, che consente
-di analizzare contemporaneamente differenti rappresentazioni delle
-informazioni.
+print(f"Categoria: {bug_report.category}")
+print(f"Priorità: {bug_report.priority}")
+print(f"Riassunto: {bug_report.summary}")
+print(f"Possibile causa: {bug_report.possible_cause}")
 
-I Transformer hanno avuto un forte impatto nel Natural Language
-Processing e costituiscono la base di molti moderni Large Language
-Models.
+print("\nAzioni suggerite:")
+
+for action in bug_report.suggested_actions:
+    print(f"- {action}")
+
+
+# =========================================================
+# ESEMPIO 2 - SECURITY CODE REVIEW
+# =========================================================
+
+class Vulnerability(BaseModel):
+    name: str
+    description: str
+    mitigation: str
+
+
+class SecurityReview(BaseModel):
+    risk_level: str
+    vulnerabilities: list[Vulnerability]
+    overall_recommendation: str
+
+
+def analyze_code_security(code: str) -> SecurityReview:
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Sei un assistente specializzato in secure coding. "
+                    "Analizza il codice fornito, individua eventuali "
+                    "vulnerabilità e restituisci il risultato secondo "
+                    "lo schema fornito. Concentrati su problemi realmente "
+                    "deducibili dal codice e proponi mitigazioni difensive."
+                ),
+            },
+            {
+                "role": "user",
+                "content": code,
+            },
+        ],
+        response_format=SecurityReview,
+    )
+
+    return completion.choices[0].message.parsed
+
+
+code_to_review = """
+def find_user(email, cursor):
+    query = f"SELECT * FROM users WHERE email = '{email}'"
+    cursor.execute(query)
+    return cursor.fetchone()
 """
 
-article_summary = get_article_summary(article)
+security_review = analyze_code_security(code_to_review)
 
-print("\n=== ESEMPIO 2: TEXT SUMMARIZATION ===\n")
+print("\n=== ESEMPIO 2: SECURITY CODE REVIEW ===\n")
 
-print(
-    f"Anno di introduzione: "
-    f"{article_summary.invented_year}"
-)
+print(f"Livello di rischio: {security_review.risk_level}")
 
-print(
-    f"Riassunto: "
-    f"{article_summary.summary}"
-)
+print("\nVulnerabilità individuate:")
 
-print("\nInventori:")
-
-for inventor in article_summary.inventors:
-    print(f"- {inventor}")
-
-print("\nConcetti:")
-
-for concept in article_summary.concepts:
-    print(
-        f"- {concept.title}: "
-        f"{concept.description}"
-    )
+for vulnerability in security_review.vulnerabilities:
+    print(f"\nNome: {vulnerability.name}")
+    print(f"Descrizione: {vulnerability.description}")
+    print(f"Mitigazione: {vulnerability.mitigation}")
 
 print(
-    f"\nDescrizione: "
-    f"{article_summary.description}"
+    f"\nRaccomandazione generale: "
+    f"{security_review.overall_recommendation}"
 )
